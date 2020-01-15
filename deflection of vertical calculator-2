@@ -1,0 +1,133 @@
+ #include<stdio.h>
+ #include<stdlib.h>
+ #include<string.h>
+ #include<math.h>
+
+ float etatable[37324800][3];
+ float xitable[37324800][3];
+
+ typedef struct {
+  double lat ;
+  double lon ;
+  double x ;
+ } value;
+
+ double linearInterpolation(double x1, double f_x1, double x2, double f_x2, double x)
+ {
+	double result = (x - x1)/(x2-x1)*f_x2  + (x2-x)/(x2-x1)*f_x1;
+	return result;
+ }  
+ int main() {
+
+   float lat3,lon3,lat4,lon4,eta,xi,theta;
+    value *xitable, *etatable;
+    long int i,j,k,t1,t2,p1,p2,p4,p5,numlines=37324800L; //constant of L integer type
+    long int t3,t4,Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8,t5,t6,t7,t8;
+    double err_1,err_2,err_3,err_4,err_5,err_6,err_7,err_8;
+    char a='%';
+
+    // FILE *et = fopen("eta_cnt2.5x2.5_EGM08_to2190_WGS84_ell_nh","rb");
+      FILE *in;
+
+     etatable=(value *)malloc(sizeof(value)*numlines);
+     xitable=(value *)malloc(sizeof(value)*numlines);
+     
+     in = fopen("result22.txt","r");
+
+     // reading file into allocated memory
+    for(i=0; i<numlines; i++)
+      fscanf(in,"%lf %lf %lf\n", &etatable[i].lat, &etatable[i].lon, &etatable[i].x);
+    fclose(in);
+
+     in = fopen("result3.txt","r");
+     for(i=0; i<numlines; i++)
+      fscanf(in,"%lf %lf %lf\n", &xitable[i].lat, &xitable[i].lon, &xitable[i].x);
+    fclose(in);
+
+    
+     printf("Please enter Latitude:\n ");
+     scanf("%f",&lat4);
+     printf("Please enter Longitude:\n ");
+     scanf("%f",&lon4);
+    
+                       // 4 grid points in eta file 
+              
+        t1 = (long int)floor(((etatable[0].lat-lat4)/0.041667)*8640); // index no  = 11079115
+
+	t2 = t1+8640 ; // exceed the limits of our selected grid index no  = 11087755	printf("etatable[%ld].lat = %lf  \n",t2,etatable[t2].lat);
+     
+	t3 = (long int)ceil((etatable[0].lat-etatable[t1].lat)/0.041667)*8640; //starting index no  of the supremum latitude value for interpolation = 11076480
+
+	t4 = (long int)ceil((etatable[0].lat-etatable[t2].lat)/0.041667)*8640; //starting index no of the infimum latitude value for interpolation = 11085120
+
+	p1 = (long int)floor(fabs(etatable[0].lon-lon4)/0.041667) ; // index no of the supremum longitude value for interpolation 
+
+	p2 = p1+1 ; // index no of the infimum longitude value for interpolation 
+			 			  			    			     
+	  // USİNG BILINEAR INTERPOLATION for eta file
+
+	  Q1 = t4+p1 ; //corresponding to the phi1-lambda1 index no
+
+	  Q3 = t4+p2 ; //corresponding to the phi1-lambda2 index no
+
+	  Q2 = t3+p1 ; //corresponding to the phi2-lambda1 index no
+
+	  Q4 = t3+p2 ; //corresponding to the phi2-lambda2 index no
+	  
+        double  R1 = linearInterpolation(etatable[Q1].lon,etatable[Q1].x,etatable[Q3].lon,etatable[Q3].x,lon4); 
+	double  R2 =linearInterpolation(etatable[Q2].lon,etatable[Q2].x,etatable[Q4].lon,etatable[Q4].x,lon4);
+	double  P = linearInterpolation(etatable[Q1].lat,R1,etatable[Q2].lat,R2,lat4);
+	
+	double  R3 = linearInterpolation(xitable[Q1].lon,xitable[Q1].x,xitable[Q3].lon,xitable[Q3].x,lon4); 
+	double  R4 = linearInterpolation(xitable[Q2].lon,xitable[Q2].x,xitable[Q4].lon,xitable[Q4].x,lon4);
+	double  P2 = linearInterpolation(xitable[Q1].lat,R3,xitable[Q2].lat,R4,lat4);
+
+		
+       	printf("\n eta values at the points used for interpolation : \n");
+	printf(" Point 1 : eta( %lf, %lf) = %.9lf \n",etatable[Q1].lat,etatable[Q1].lon,etatable[Q1].x);
+	printf(" Point 2 : eta( %lf, %lf) = %.9lf \n",etatable[Q2].lat,etatable[Q2].lon,etatable[Q2].x);
+	printf(" Point 3 : eta( %lf, %lf) = %.9lf \n",etatable[Q3].lat,etatable[Q3].lon,etatable[Q3].x);
+	printf(" Point 4 : eta( %lf, %lf) = %.9lf \n",etatable[Q4].lat,etatable[Q4].lon,etatable[Q4].x);
+
+	printf("\n xi values at the points used for interpolation : \n");
+	printf(" Point 1 : xi( %lf, %lf) = %.9lf \n",xitable[Q1].lat,xitable[Q1].lon,xitable[Q1].x);
+	printf(" Point 2 : xi( %lf, %lf) = %.9lf \n",xitable[Q2].lat,xitable[Q2].lon,xitable[Q2].x);
+	printf(" Point 3 : xi( %lf, %lf) = %.9lf \n",xitable[Q3].lat,xitable[Q3].lon,xitable[Q3].x);
+	printf(" Point 4 : xi( %lf, %lf) = %.9lf \n",xitable[Q4].lat,xitable[Q4].lon,xitable[Q4].x);
+	
+      	eta= P ;	
+	xi= P2 ;
+	theta = sqrt( xi*xi + eta*eta );
+
+	//results
+	printf("\n xi( %lf, %lf) = %.9lf \n",lat4,lon4,P2);
+	printf(" eta( %lf, %lf) = %.9lf \n",lat4,lon4,P);
+	printf("\n Interpolation result xi = %lf arcsecond  \n", xi);
+	printf(" Interpolation result eta = %lf arcsecond\n", eta);
+	printf("\n Deflection of vertical = %lf arcsecond\n\n", theta);
+
+        //errors estimated 
+	err_1 = fabs((xitable[Q1].x-P2)/P2)*100 ;
+        err_2 = fabs((xitable[Q3].x-P2)/P2)*100 ;
+        err_3 = fabs((xitable[Q2].x-P2)/P2)*100 ;
+        err_4 = fabs((xitable[Q4].x-P2)/P2)*100 ;
+	printf(" \nRelative Errors of Each xi Value :\n");
+	printf("Relative Error of Point 1 = %c %lf \n",a,err_1);
+	printf("Relative Error of Point 2 = %c %lf \n",a,err_3);
+	printf("Relative Error of Point 3 = %c %lf \n",a,err_2);
+	printf("Relative Error of Point 4 = %c %lf \n",a,err_4);	
+
+        err_5 = fabs((etatable[Q1].x-P)/P)*100 ;
+        err_6 = fabs((etatable[Q3].x-P)/P)*100 ;
+        err_7 = fabs((etatable[Q2].x-P)/P)*100 ;
+        err_8 = fabs((etatable[Q4].x-P)/P)*100 ;
+	printf(" \nRelative Errors of Each eta Value :\n");
+	printf("Relative Error of Point 1 = %c %lf \n",a,err_5);
+	printf("Relative Error of Point 2 = %c %lf \n",a,err_7);
+	printf("Relative Error of Point 3 = %c %lf \n",a,err_6);
+	printf("Relative Error of Point 4 = %c %lf \n",a,err_8);
+        
+    free(etatable);
+    free(xitable);
+    return 0;
+}
