@@ -1,0 +1,30 @@
+#include <stdio.h>
+
+int main()
+{
+	FILE *fp;
+	char ch;
+	long int linesCount=0;
+	fp=NULL;
+	
+	//open file in read more
+	fp=fopen("result3.txt","r");
+        if(fp==NULL)
+	  printf("File is not found!\n");
+	else{
+	  
+	//read character by character and check for new line	
+	  while((ch=fgetc(fp))!=EOF)
+	    {
+		if(ch=='\n')
+			linesCount++;
+	    }
+	
+	//close the file
+	  fclose(fp);
+	
+	//print number of lines
+	  printf("Total number of lines are: %ld\n",linesCount);
+	}
+	return 0;	
+}
